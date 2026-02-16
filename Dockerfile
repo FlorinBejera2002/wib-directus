@@ -1,18 +1,7 @@
-FROM node:18-alpine
+FROM directus/directus:11.2.2
 
-WORKDIR /directus
+# Copy custom extensions
+COPY ./extensions /directus/extensions
 
-# Install Directus
-RUN npm install -g directus
-
-# Create directories
-RUN mkdir -p /directus/database /directus/uploads /directus/extensions
-
-# Copy extensions
-COPY extensions /directus/extensions
-
-# Expose port
+# Directus will use environment variables from Render
 EXPOSE 8055
-
-# Start Directus
-CMD ["npx", "directus", "start"]
