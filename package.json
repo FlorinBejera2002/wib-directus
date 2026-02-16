@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "description": "Blog & Content Management System for asigurari.ro",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "directus start",
+    "bootstrap": "directus bootstrap"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "directus": "^11.2.2",
     "mongodb": "^4.17.2"
   }
 }
