@@ -1,10 +1,18 @@
-FROM directus/directus:11
+FROM node:18-alpine
 
-# Copiază extensiile custom
+WORKDIR /directus
+
+# Install Directus
+RUN npm install -g directus
+
+# Create directories
+RUN mkdir -p /directus/database /directus/uploads /directus/extensions
+
+# Copy extensions
 COPY extensions /directus/extensions
 
-# Expune portul
+# Expose port
 EXPOSE 8055
 
-# Directus va folosi variabilele de mediu din Render
-CMD ["node", "cli.js", "start"]
+# Start Directus
+CMD ["npx", "directus", "start"]
