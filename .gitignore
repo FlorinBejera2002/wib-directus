@@ -1,0 +1,28 @@
+# Environment
+.env
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Node modules (if any extensions use them)
+node_modules/
+
+# n8n data
+n8n-data/
+
+# PostgreSQL data
+postgres-data/
+
+# Docker volumes
+.docker/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

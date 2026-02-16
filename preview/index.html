@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Preview Articol</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; line-height: 1.6; }
+
+/* Preview toolbar */
+.preview-bar {
+    position: sticky; top: 0; z-index: 1000;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white; padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.preview-bar-left { display: flex; align-items: center; gap: 12px; }
+.preview-bar-left i { font-size: 20px; }
+.preview-bar-title { font-weight: 700; font-size: 15px; }
+.preview-bar-subtitle { font-size: 12px; opacity: 0.85; }
+.preview-bar-right { display: flex; gap: 8px; align-items: center; }
+.preview-bar-right a, .preview-bar-right button {
+    padding: 6px 14px; border-radius: 6px; font-size: 13px;
+    font-weight: 600; text-decoration: none; cursor: pointer; border: none;
+}
+.btn-back { background: rgba(255,255,255,0.2); color: white; }
+.btn-back:hover { background: rgba(255,255,255,0.3); }
+.btn-edit { background: white; color: #d97706; }
+.btn-edit:hover { background: #fef3c7; }
+.btn-refresh { background: rgba(255,255,255,0.2); color: white; }
+.btn-refresh:hover { background: rgba(255,255,255,0.3); }
+.status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: white;
+}
+
+/* Device switcher */
+.device-switcher {
+    display: flex; justify-content: center; gap: 8px;
+    padding: 12px; background: #e5e7eb;
+}
+.device-btn {
+    padding: 6px 16px; border: 2px solid #d1d5db; border-radius: 8px;
+    background: white; cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.device-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
+
+/* Article container */
+.article-wrapper {
+    max-width: 900px; margin: 0 auto; padding: 24px 16px;
+    transition: max-width 0.3s ease;
+}
+.article-wrapper.phone-mode { max-width: 390px; }
+
+/* Cards */
+.card {
+    background: white; border-radius: 12px; padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px;
+}
+h1 { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 14px; line-height: 1.3; }
+.meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: #6b7280; align-items: center; }
+.meta i { margin-right: 4px; }
+.meta .badge { background: #dbeafe; color: #1e40af; padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+
+/* Breadcrumb */
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280; margin-bottom: 16px; flex-wrap: wrap; }
+.breadcrumb .sep { font-size: 10px; }
+.breadcrumb .current { color: #374151; font-weight: 500; }
+
+/* Image */
+.featured-img { width: 100%; height: auto; border-radius: 10px; margin-bottom: 16px; max-height: 450px; object-fit: cover; }
+
+/* Intro & Conclusion */
+.intro, .conclusion { border-left: 4px solid #22c55e; padding-left: 16px; margin: 16px 0; }
+.intro p, .conclusion p { color: #374151; line-height: 1.7; margin-bottom: 12px; }
+
+/* Content — Tailwind handles styling from article HTML */
+.content-area { color: #374151; line-height: 1.7; }
+
+/* Excerpt preview */
+.excerpt-box { border-left: 4px solid #3b82f6; }
+.excerpt-label { font-size: 12px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+
+/* Loading & Error */
+.loading { text-align: center; padding: 80px 20px; color: #6b7280; }
+.loading i { font-size: 48px; margin-bottom: 16px; display: block; color: #d1d5db; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-msg { text-align: center; padding: 80px 20px; color: #ef4444; }
+.error-msg i { font-size: 48px; margin-bottom: 16px; display: block; }
+
+/* Auto-refresh indicator */
+.refresh-indicator {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #22c55e; color: white; padding: 8px 16px;
+    border-radius: 8px; font-size: 12px; font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    opacity: 0; transition: opacity 0.3s;
+}
+.refresh-indicator.show { opacity: 1; }
+
+@media (max-width: 640px) {
+    h1 { font-size: 20px; }
+    .card { padding: 14px 16px; }
+    .preview-bar { flex-direction: column; gap: 8px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="preview-bar">
+    <div class="preview-bar-left">
+        <i class="fas fa-eye"></i>
+        <div>
+            <div class="preview-bar-title">MOD PREVIEW</div>
+            <div class="preview-bar-subtitle">Previzualizare articol - nu este vizibil public</div>
+        </div>
+        <span class="status-badge" id="status-badge"></span>
+    </div>
+    <div class="preview-bar-right">
+        <button class="btn-refresh" onclick="loadArticle()" title="Reincarca">
+            <i class="fas fa-sync-alt"></i> Reincarca
+        </button>
+        <a id="edit-link" href="#" class="btn-edit">
+            <i class="fas fa-pen-to-square"></i> Editeaza in CMS
+        </a>
+        <a id="list-link" href="#" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Lista articole
+        </a>
+    </div>
+</div>
+
+<div class="device-switcher">
+    <button class="device-btn active" onclick="setDevice('desktop', this)">&#128421; Desktop</button>
+    <button class="device-btn" onclick="setDevice('phone', this)">&#128241; Mobil</button>
+</div>
+
+<div id="article-wrapper" class="article-wrapper">
+    <div class="loading" id="loading">
+        <i class="fas fa-spinner"></i>
+        <p>Se incarca articolul...</p>
+    </div>
+    <div class="error-msg" id="error" style="display:none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p id="error-text"></p>
+    </div>
+    <div id="article-content" style="display:none;"></div>
+</div>
+
+<div class="refresh-indicator" id="refresh-indicator">
+    <i class="fas fa-check"></i> Actualizat!
+</div>
+
+<script>
+// Use local /api/ proxy to avoid CORS issues
+const DIRECTUS_URL = window.location.origin + '/api';
+const DIRECTUS_ADMIN_URL = 'http://localhost:8055';
+
+const SYSTEM_LABELS = {
+    rca: 'RCA', casco: 'Casco', travel: 'Calatorie', home: 'Locuinta',
+    common: 'General', health: 'Sanatate', life: 'Viata',
+    accidents: 'Accidente Persoane', breakdown: 'Asistenta Rutiera',
+    cmr: 'CMR', malpraxis: 'Malpraxis', rcp: 'Malpraxis',
+};
+const STATUS_COLORS = {
+    draft: '#6b7280', pending_review: '#f59e0b',
+    published: '#22c55e', archived: '#ef4444',
+};
+const STATUS_LABELS = {
+    draft: 'Ciorna', pending_review: 'In asteptare',
+    published: 'Publicat', archived: 'Arhivat',
+};
+
+function getPostId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+}
+
+function getCollection() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('collection') || 'blog_posts';
+}
+
+function getToken() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('token') || localStorage.getItem('directus_token') || '';
+}
+
+const COLLECTION_LABELS = {
+    blog_posts: 'Articol Blog',
+    news: 'Știre',
+};
+
+const NEWS_CATEGORY_LABELS = {
+    legislatie: 'Legislație', piata: 'Piață', companii: 'Companii',
+    produse: 'Produse', tehnologie: 'Tehnologie', general: 'General',
+};
+
+function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+async function loadArticle() {
+    const postId = getPostId();
+    const collection = getCollection();
+    const token = getToken();
+    const collectionLabel = COLLECTION_LABELS[collection] || collection;
+
+    // Update subtitle with collection type
+    document.querySelector('.preview-bar-subtitle').textContent = 'Previzualizare ' + collectionLabel.toLowerCase() + ' — nu este vizibil public';
+
+    if (!postId) {
+        showError('Lipseste parametrul ?id=... in URL.');
+        return;
+    }
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('article-content').style.display = 'none';
+
+    // Update CMS links for the correct collection
+    document.getElementById('edit-link').href = DIRECTUS_ADMIN_URL + '/admin/content/' + collection + '/' + postId;
+    document.getElementById('list-link').href = DIRECTUS_ADMIN_URL + '/admin/content/' + collection;
+
+    try {
+        // Use access_token as query param to avoid CORS preflight issues
+        const url = DIRECTUS_URL + '/items/' + collection + '/' + postId + (token ? '?access_token=' + token : '');
+        const res = await fetch(url);
+        if (!res.ok) throw new Error((collection === 'news' ? 'Stirea' : 'Articolul') + ' nu a fost gasit(a) (HTTP ' + res.status + ')');
+
+        const data = await res.json();
+        const post = data.data;
+        if (!post) throw new Error('Articolul nu exista.');
+
+        renderArticle(post);
+
+        // Store token for future use
+        if (token) localStorage.setItem('directus_token', token);
+
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('error-text').textContent = msg;
+}
+
+function renderArticle(post) {
+    const collection = getCollection();
+    const title = post.title || 'Fara titlu';
+    const content = post.content || '';
+    const excerpt = post.excerpt || '';
+    const status = post.status || 'draft';
+    const publishedAt = post.published_at
+        ? new Date(post.published_at).toLocaleDateString('ro-RO')
+        : 'Nepublicat';
+
+    // Fields that differ between blog_posts and news
+    const authorName = post.author_display_name || post.author_name || 'Echipa asigurari.ro';
+    const categoryLabel = collection === 'news'
+        ? (NEWS_CATEGORY_LABELS[post.category] || post.category || 'General')
+        : (SYSTEM_LABELS[post.system] || post.system || 'General');
+    const isBreaking = post.is_breaking || false;
+    const sourceName = post.source_name || '';
+    const readingTime = post.reading_time || 0;
+
+    // Update status badge
+    const badge = document.getElementById('status-badge');
+    badge.textContent = STATUS_LABELS[status] || status;
+    badge.style.background = STATUS_COLORS[status] || '#6b7280';
+
+    // Update page title
+    const typeLabel = collection === 'news' ? 'Stire' : 'Articol';
+    document.title = 'Preview ' + typeLabel + ': ' + title;
+
+    // The content HTML already contains full Tailwind structure
+    let html = '';
+
+    // Header card — always show for news, conditionally for blog
+    const showHeader = collection === 'news' || !content || !content.includes(esc(title).substring(0, 30));
+    if (showHeader) {
+        html += `
+        <div class="bg-white rounded-xl p-4 md:p-6 shadow-sm mb-8">
+            ${isBreaking ? '<div class="mb-3"><span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Breaking</span></div>' : ''}
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">${esc(title)}</h1>
+            <div class="flex flex-wrap gap-3 text-sm text-gray-500 items-center">
+                <span><i class="far fa-calendar mr-1"></i>${publishedAt}</span>
+                <span><i class="far fa-user mr-1"></i>${esc(authorName)}</span>
+                <span class="bg-blue-100 text-blue-800 px-3 py-0.5 rounded-full text-xs font-semibold">${esc(categoryLabel)}</span>
+                ${readingTime > 0 ? '<span><i class="far fa-clock mr-1"></i>' + readingTime + ' min lectura</span>' : ''}
+                ${sourceName ? '<span><i class="fas fa-link mr-1"></i>Sursa: ' + esc(sourceName) + '</span>' : ''}
+            </div>
+        </div>`;
+    }
+
+    // Render content directly — it has its own Tailwind structure
+    html += content || '<div class="bg-white rounded-xl p-8 shadow-sm text-center text-gray-400 italic"><i class="fas fa-pen-fancy text-4xl mb-4 block"></i>Niciun continut inca.</div>';
+
+    // Show excerpt at the bottom as info for editors
+    if (excerpt) {
+        html += `<div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-xl p-4 mt-6">
+            <p class="text-xs text-gray-500 font-bold uppercase tracking-wide mb-1"><i class="fas fa-quote-left mr-1"></i> Excerpt (afisat in lista)</p>
+            <p class="text-gray-700 text-sm">${esc(excerpt)}</p>
+        </div>`;
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('article-content').style.display = 'block';
+    document.getElementById('article-content').innerHTML = html;
+
+    // Show refresh indicator
+    const indicator = document.getElementById('refresh-indicator');
+    indicator.classList.add('show');
+    setTimeout(() => indicator.classList.remove('show'), 1500);
+}
+
+function setDevice(mode, btn) {
+    const wrapper = document.getElementById('article-wrapper');
+    document.querySelectorAll('.device-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    wrapper.classList.toggle('phone-mode', mode === 'phone');
+}
+
+// Load on page load (no auto-refresh — use Reincarca button)
+loadArticle();
+</script>
+</body>
+</html>

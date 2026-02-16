@@ -1,0 +1,187 @@
+{
+  "name": "Blog Post Published → Social Media",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "blog-published",
+        "responseMode": "onReceived",
+        "responseData": "allEntries"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: Blog Published",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "blog-published"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0].json;\n\nconst title = item.title || '';\nconst excerpt = item.excerpt || '';\nconst url = `https://www.asigurari.ro/blog/${item.system}/${item.slug}`;\nconst imageUrl = item.featured_image_url || '';\nconst system = item.system || '';\nconst tags = item.tags || [];\n\n// Generate platform-specific content\nconst hashtagsRo = tags.map(t => `#${t.replace(/\\s+/g, '')}`).join(' ');\nconst systemTag = `#asigurari #${system}`;\n\nreturn [{\n  json: {\n    title,\n    excerpt,\n    url,\n    imageUrl,\n    system,\n    tags,\n    // Facebook: up to 500 chars + link\n    facebook_text: `${title}\\n\\n${excerpt.substring(0, 400)}\\n\\n${systemTag} ${hashtagsRo}\\n\\nCiteste mai mult: ${url}`,\n    // Instagram: up to 2200 chars + hashtags\n    instagram_caption: `${title}\\n\\n${excerpt}\\n\\n${systemTag} ${hashtagsRo} #blog #romania`,\n    // LinkedIn: professional tone, up to 700 chars\n    linkedin_text: `${title}\\n\\n${excerpt.substring(0, 500)}\\n\\nCiteste articolul complet pe asigurari.ro:\\n${url}\\n\\n${systemTag}`,\n    // Twitter/X: max 280 chars\n    twitter_text: `${title.substring(0, 200)}\\n\\n${url}\\n\\n${systemTag}`,\n  }\n}];"
+      },
+      "id": "generate-content",
+      "name": "Generate Social Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{$env.FACEBOOK_PAGE_ID}}/feed",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "message", "value": "={{ $json.facebook_text }}" },
+            { "name": "link", "value": "={{ $json.url }}" },
+            { "name": "access_token", "value": "={{$env.FACEBOOK_PAGE_TOKEN}}" }
+          ]
+        }
+      },
+      "id": "facebook-post",
+      "name": "Post to Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 100],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{$env.INSTAGRAM_BUSINESS_ID}}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "image_url", "value": "={{ $json.imageUrl }}" },
+            { "name": "caption", "value": "={{ $json.instagram_caption }}" },
+            { "name": "access_token", "value": "={{$env.INSTAGRAM_TOKEN}}" }
+          ]
+        }
+      },
+      "id": "instagram-create",
+      "name": "Instagram: Create Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{$env.LINKEDIN_TOKEN}}" },
+            { "name": "X-Restli-Protocol-Version", "value": "2.0.0" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "body",
+              "value": "={\"author\":\"urn:li:organization:{{$env.LINKEDIN_ORG_ID}}\",\"lifecycleState\":\"PUBLISHED\",\"specificContent\":{\"com.linkedin.ugc.ShareContent\":{\"shareCommentary\":{\"text\":\"{{ $json.linkedin_text }}\"},\"shareMediaCategory\":\"ARTICLE\",\"media\":[{\"status\":\"READY\",\"originalUrl\":\"{{ $json.url }}\"}]}},\"visibility\":{\"com.linkedin.ugc.MemberNetworkVisibility\":\"PUBLIC\"}}"
+            }
+          ]
+        }
+      },
+      "id": "linkedin-post",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 500],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twitter.com/2/tweets",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{$env.TWITTER_BEARER_TOKEN}}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"text\":\"{{ $json.twitter_text }}\"}"
+      },
+      "id": "twitter-post",
+      "name": "Post to Twitter/X",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 700],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect results from all social media posts\nconst results = {\n  facebook: items[0]?.json?.id ? true : false,\n  instagram: items[1]?.json?.id ? true : false,\n  linkedin: items[2]?.json?.id ? true : false,\n  twitter: items[3]?.json?.data?.id ? true : false,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: results }];"
+      },
+      "id": "collect-results",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@asigurari.ro",
+        "toEmail": "={{$env.ADMIN_EMAIL}}",
+        "subject": "=Blog Post Published & Shared: {{ $json.title }}",
+        "text": "=Blog post published and shared to social media.\n\nTitle: {{ $json.title }}\nURL: {{ $json.url }}\n\nFacebook: {{ $json.facebook ? 'OK' : 'FAILED' }}\nInstagram: {{ $json.instagram ? 'OK' : 'FAILED' }}\nLinkedIn: {{ $json.linkedin ? 'OK' : 'FAILED' }}\nTwitter/X: {{ $json.twitter ? 'OK' : 'FAILED' }}"
+      },
+      "id": "notify-admin",
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1350, 400],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Webhook: Blog Published": {
+      "main": [
+        [{ "node": "Generate Social Content", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Social Content": {
+      "main": [
+        [
+          { "node": "Post to Facebook", "type": "main", "index": 0 },
+          { "node": "Instagram: Create Media", "type": "main", "index": 0 },
+          { "node": "Post to LinkedIn", "type": "main", "index": 0 },
+          { "node": "Post to Twitter/X", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Post to Facebook": {
+      "main": [
+        [{ "node": "Collect Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Instagram: Create Media": {
+      "main": [
+        [{ "node": "Collect Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Post to LinkedIn": {
+      "main": [
+        [{ "node": "Collect Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Post to Twitter/X": {
+      "main": [
+        [{ "node": "Collect Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Collect Results": {
+      "main": [
+        [{ "node": "Notify Admin", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

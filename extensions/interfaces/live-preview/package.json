@@ -1,0 +1,19 @@
+{
+  "name": "directus-interface-live-preview",
+  "version": "1.0.0",
+  "description": "Live preview panel for blog posts - shows article exactly as it will appear on the website",
+  "type": "module",
+  "directus:extension": {
+    "type": "interface",
+    "path": "index.js",
+    "source": "src/index.js",
+    "host": "^11.0.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

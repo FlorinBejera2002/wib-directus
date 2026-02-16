@@ -1,0 +1,14 @@
+{
+  "name": "directus-hook-mongo-sync",
+  "version": "1.0.0",
+  "description": "Sync Directus blog_posts to MongoDB for Symfony frontend",
+  "type": "module",
+  "directus:extension": {
+    "type": "hook",
+    "path": "index.js",
+    "host": "^11.0.0"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  }
+}
