@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "directus start",
+    "start": "directus bootstrap && directus start",
     "bootstrap": "directus bootstrap"
   },
   "keywords": [],
